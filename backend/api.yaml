@@ -1,0 +1,115 @@
+# backend/api/openapi.yaml
+
+openapi: 3.0.0
+info:
+  title: Vending Machine API
+  version: 1.0.0
+  description: API for managing vending machine items and balance
+servers:
+  - url: http://localhost:5000
+    description: Local server
+
+paths:
+  /items/{product_id}:
+    get:
+      summary: Get item by product ID
+      operationId: getItemById
+      tags:
+        - Items
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the item to retrieve
+      responses:
+        '200':
+          description: A single item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '402':
+          description: Insufficient balance
+        '404':
+          description: Item not found
+        '500':
+          description: Internal server error
+
+  /balance:
+    patch:
+      summary: Add money to the current balance
+      operationId: addMoney
+      tags:
+        - Balance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddMoneyRequest'
+      responses:
+        '200':
+          description: Balance updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Balance'
+        '400':
+          description: Invalid request
+        '500':
+          description: Internal server error
+
+  /balance/cancel:
+    post:
+      summary: Cancel session and return change
+      operationId: cancelSession
+      tags:
+        - Balance
+      responses:
+        '200':
+          description: Session cancelled, change returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Balance'
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    Item:
+      type: object
+      required:
+        - id
+        - name
+        - price
+      properties:
+        id:
+          type: string
+          example: "60c72b2f9b1e8a4f4c8b4567"
+        name:
+          type: string
+          example: "Soda"
+        price:
+          type: number
+          example: 1.25
+
+    AddMoneyRequest:
+      type: object
+      required:
+        - amount
+      properties:
+        amount:
+          type: number
+          example: 5.0
+
+    Balance:
+      type: object
+      required:
+        - currentBalance
+      properties:
+        currentBalance:
+          type: number
+          example: 10.0
