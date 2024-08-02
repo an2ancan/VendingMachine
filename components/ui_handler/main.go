@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	// "os"
-	"time"
 	// "path/filepath"
 )
 
@@ -36,13 +35,6 @@ func main() {
         w.Header().Set("Content-Type", "application/json")
         json.NewEncoder(w).Encode(balance)
     })
-
-    go func() {
-        for {
-            time.Sleep(10 * time.Second)
-            balance.CurrentBalance += 10.0
-        }
-    }()
 
     // Get port from environment or set default
     port := "5000"
