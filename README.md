@@ -96,6 +96,13 @@ graph TD;
 
 - Central System Communication
     - Collects data from Inventory Management for inventory tracking.
+    - Receives transaction reports from User Interface for user selections.
+    - Communicates with the Product Dispensing System for dispensing products and updating inventory.
+    - Connects to the Maintenance Interface for restocking and inventory checks.
+    -Reports inventory status to the Central System Communication.
+
+- Central System Communication
+    - Collects data from Inventory Management for inventory tracking.
     - Receives transaction reports from the Payment System.
     
 - Maintenance Interface
@@ -104,20 +111,23 @@ graph TD;
     - Communicates with the Payment System for updates and maintenance tasks.
 ---
 
-## API Descriptions:
+# API Descriptions and DB dessription:
 
-### User Interface:
+## User Interface:
+
+#### API:
+
 1. Adding Money to the Balance
-    - Endpoint: PUT /balance
+    - Endpoint: PATCH /balance
     - Description: Adds money to the user's balance.
-    - Request Body: JSON object containing the amount to be added.
-    - Response: Updated balance and any relevant status messages.
+    - Request Body: JSON object containing the amount to be added. In our state machine, also checks, whether it is enough money on balance for the chosen item (if any) and proceeds payement if positive. The item dispose initiated afterward. If dispose or change check fails - money are returned back to the user with the displayed message
+    - Response: Updated balance and any relevant status messages or display msg.
 2. Choosing an Item
     -   Endpoint: PUT /products/{id}
-    - Description: Chooses an item based on its ID.
+    - Description: Chooses an item based on its ID. The same state machine check as in the adding money to the balance is carried out
     -   Path Parameter: id (the ID of the product to be chosen).
     -   Request Body: Optional. Can include quantity or other parameters if needed.
-    - Response: Confirmation of item selection, updated balance, and any relevant status messages.
+    - Response: Confirmation of item selection, updated balance, and any relevant status messages or display msg.
 3. Check Balance
     - Endpoint: GET /balance
     - Description: Retrieves the current balance.
@@ -131,4 +141,120 @@ graph TD;
     -   Description: Retrieves a list of available products.
     -   Response: List of products with their IDs, names, prices, and stock status.
 
-##
+### DB
+
+Balance Table
+
+|Name|Type|Constraint|
+|----|----|----------|
+|balance|NUMBER|DEFAULT 0
+---
+
+## Payment System
+1. Get the last transaction id
+    - Endpoint: GET /payments/transactionId
+
+2. Validate Transaction
+    - Endpoint: GET /change
+    - Description: Validate transaction, whether it is enough money and change can be disposed
+    - Requset Body: Item and Balance
+    - Response: Status and reason(optional)
+
+3. Proceed the tpransaction:
+    - Endpoint: POST /payments/{id}
+    - Description: Validates and proceeds the payment
+    - Request Body:
+        Amount of money
+    - Response Body:
+        The status. If failed (status 400), the reason msg
+
+4. Dispose change:
+    - Endpoint: POS
+
+5. Cancel the transaction
+    - Endpoint: PUT /payments/{id} 
+    - Description: Cancel the Transaction
+    - Response Body: Status and error msg, if any
+
+6. Fill the money collector for change
+    - Endpoint: POST /curency/{id}
+    - Request Body: quntity of curency
+    - Response: status
+
+### DB
+
+#### Transaction Table
+
+|Name|Type|Constraint|
+|----|----|----------|
+|Id|Int|Primary Key|
+|created_at|TIMESTAMP|
+|status|ENUM|'SUCCESS', 'FAILED', 'CANCELED'|
+|cost|number|
+
+#### Curency Table
+|Name|Type|Constraint|
+|----|----|----------|
+|Id|Int|Primary Key|
+|denomination|number|not nullable
+|quantity|int|not nullable
+
+---
+
+## Inventory Management
+
+1. Check item Existence
+    - Endpoint:  /items/{id}
+    - Requset Body: quantity
+    - Response Body: Status and error msg if any
+
+2. Dispose Item: 
+    - Endpoint: PATCH /items/{id}/dispose
+    - Request Body: quantity
+    - Response Body: Status and error msg if any
+
+3. Add Item:
+    - Endpoint: PATCH /items/{id}/add
+    - Request Body: quantity
+    - Response Body: Status and error msg if any
+
+4. Get item cost
+    - Endpoint: GET /items/{id}/cost
+    - Request Body: 
+    - Response Body: Cost
+
+#### Items Table
+|Name|Type|Constraint|
+|----|----|----------|
+|Id|Int|Primary Key|
+|Name|string|not nullable
+|cost|number|not nullabe
+|quantity|int|not nullable
+
+## Product disposing System
+
+1. Dispose item and send the result
+    - Endpoint: PUT /items/{id}
+    - Request Body:
+    - Response Body: Status and Error msg
+---
+
+## Maintenance Interface:
+
+1. Add curency
+    - Endpoint: PUT /curency/{id}
+    - Request Body: quntity of curency
+    - Response: status
+
+2. Add Item:
+    - Endpoint: PUT /items/{id}/add
+    - Request Body: quantity
+    - Response Body: Status and error msg if any
+---
+
+## Central System Communication
+
+1. Send msg to Central System
+    - Enpoint: POST /messages
+    - Requset Body: message
+    - Response: repsonse from Cental System
